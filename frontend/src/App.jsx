@@ -5,13 +5,45 @@ import DocumentHub from './components/DocumentHub';
 import AgentCenter from './components/AgentCenter';
 import AssistantChat from './components/AssistantChat';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Map window pathname to tab id
+function getTabFromPath() {
+  if (typeof window === 'undefined') return 'dashboard';
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  if (path === 'documents' || path === 'document-hub') return 'documents';
+  if (path === 'agents' || path === 'agent-center') return 'agents';
+  if (path === 'chat' || path === 'assistant') return 'chat';
+  if (path === 'dashboard' || path === '') return 'dashboard';
+  // Default to dashboard for any other paths (e.g. login, register, unknown routes)
+  return 'dashboard';
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => getTabFromPath());
   const [documents, setDocuments] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [healthData, setHealthData] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Sync state when browser Back/Forward is clicked
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getTabFromPath());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update browser URL and tab state
+  const handleNavigate = (tab) => {
+    setActiveTab(tab);
+    const newPath = tab === 'dashboard' ? '/' : `/${tab}`;
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({ tab }, '', newPath);
+    }
+  };
 
   // Load initial data on mount
   useEffect(() => {
@@ -21,7 +53,7 @@ export default function App() {
   const fetchDocumentsAndAnalysis = async () => {
     try {
       // 1. Fetch Ingested Documents
-      const docRes = await fetch('/api/documents');
+      const docRes = await fetch(`${API_BASE}/api/documents`);
       if (docRes.ok) {
         const docData = await docRes.json();
         setDocuments(docData.documents || []);
@@ -41,7 +73,7 @@ export default function App() {
 
   const runAnalysis = async () => {
     try {
-      const res = await fetch('/api/analyze', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/analyze`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setAnalysis(data);
@@ -58,7 +90,7 @@ export default function App() {
     files.forEach((f) => formData.append('files', f));
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
         body: formData
       });
@@ -75,9 +107,9 @@ export default function App() {
   const handleLoadSample = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/load-sample', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/load-sample`, { method: 'POST' });
       if (res.ok) {
-        const docRes = await fetch('/api/documents');
+        const docRes = await fetch(`${API_BASE}/api/documents`);
         const docData = await docRes.json();
         setDocuments(docData.documents || []);
         await runAnalysis();
@@ -91,7 +123,7 @@ export default function App() {
 
   const handleReset = async () => {
     try {
-      await fetch('/api/reset', { method: 'DELETE' });
+      await fetch(`${API_BASE}/api/reset`, { method: 'DELETE' });
       setDocuments([]);
       setAnalysis(null);
       setHealthData(null);
@@ -107,7 +139,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: queryText, persona })
@@ -136,7 +168,7 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleNavigate}
         docCount={documents.length}
         chunkCount={totalChunks}
         healthScore={healthData?.overall_score ?? null}
@@ -151,7 +183,7 @@ export default function App() {
           <Dashboard
             analysis={analysis}
             healthData={healthData}
-            onNavigate={(tab) => setActiveTab(tab)}
+            onNavigate={handleNavigate}
           />
         )}
 

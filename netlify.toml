@@ -1,0 +1,11 @@
+# Root Netlify configuration
+[build]
+  base = "frontend"
+  publish = "dist"
+  command = "npm run build"
+
+# SPA client-side fallback rule
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
