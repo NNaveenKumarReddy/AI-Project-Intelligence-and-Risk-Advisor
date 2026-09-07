@@ -10,18 +10,18 @@ An intelligent platform that ingests scattered project artifacts (PDFs, DOCX, CS
 - **Python 3.10+**
 - **Node.js 18+ & npm**
 
-### 2. Running Locally (One Command)
+### 2. Running the Application
 
-Simply run from the project root:
+Run the application directly from the project root:
 
 ```bash
 python main.py
 ```
 
-This launches the server at:
+Open your browser to:
 👉 **http://127.0.0.1:8000**
 
-Both the **FastAPI Backend API** and the **React Glassmorphism Web Interface** are served together on port `8000`.
+Both the **FastAPI Backend API** and the **React Glassmorphism Web Interface** will be active and connected on port `8000`.
 
 ---
 
